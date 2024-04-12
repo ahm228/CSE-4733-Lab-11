@@ -23,6 +23,20 @@ void producerThread()
     std::mt19937 generator(rd());
     std::uniform_int_distribution<int> distribution(1, 50);
 
+    for (int i = 0; i < NUM_RANDOM_NUMBERS; ++i) {
+        sem_wait(&semaphore);  // Wait for space in the queue
+        {
+            std::lock_guard<std::mutex> guard(mutex);  // Protect critical section
+            int num = distribution(generator);
+            sharedQueue.push(num);
+            std::cout << "Produced: " << num << std::endl;
+        }
+        cv.notify_all();  // Notify consumer threads
+    }
+    shouldContinue = false;
+    cv.notify_all();  // Notify all waiting threads to check conditions and exit if needed
+
+
     // TODO (part 1):
     // 1. FOR i from 0 to 99 DO:
     //    a. Wait on a semaphore to allow consumer to empty the queue
@@ -56,6 +70,19 @@ void consumerThread()
 {
     while (true)
     {
+
+        std::unique_lock<std::mutex> lock(mutex);  // Prepare to wait
+        cv.wait(lock, []{ return shouldWait(); });  // Wait until there's an item or stopping condition
+
+        if (!sharedQueue.empty()) {
+            int num = sharedQueue.front();
+            sharedQueue.pop();
+            std::cout << "Consumed: " << num << std::endl;
+            lock.unlock();  // Unlock before signaling semaphore
+            sem_post(&semaphore);  // Signal space available in the queue
+        } else if (!shouldContinue) {
+            break;  // Exit loop if no items and shouldContinue is false
+        }
 
 	// TODO (part 2):
 	//
