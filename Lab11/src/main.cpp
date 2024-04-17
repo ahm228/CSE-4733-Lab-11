@@ -24,31 +24,17 @@ void producerThread()
     std::uniform_int_distribution<int> distribution(1, 50);
 
     for (int i = 0; i < NUM_RANDOM_NUMBERS; ++i) {
-        sem_wait(&semaphore);  // Wait for space in the queue
+        sem_wait(&semaphore);  //  Wait on a semaphore to allow consumer to empty the queue
         {
-            std::lock_guard<std::mutex> guard(mutex);  // Protect critical section
-            int num = distribution(generator);
-            sharedQueue.push(num);
+            std::lock_guard<std::mutex> guard(mutex);  // Create a std::lock_guard using the mutex to enter the critical section
+            int num = distribution(generator); // Generate a random integer
+            sharedQueue.push(num); // Push number to the shared queue
             std::cout << "Produced: " << num << std::endl;
         }
-        cv.notify_all();  // Notify consumer threads
+        cv.notify_all();  // Notify all threads waiting on the semaphore
     }
     shouldContinue = false;
-    cv.notify_all();  // Notify all waiting threads to check conditions and exit if needed
-
-
-    // TODO (part 1):
-    // 1. FOR i from 0 to 99 DO:
-    //    a. Wait on a semaphore to allow consumer to empty the queue
-    //    b. Create a std::lock_guard using the mutex to enter the critical section
-    //    c. Generate a random integer
-    //    d. Push number to the shared queue
-    //    e. Write the number to the console output, "Produced: <num>"
-    //    f. Notify all threads waiting on the semaphore
-    // 2. Set 'shouldContinue' to false
-    // 3. Notify all threads waiting on the semaphore
-
-    // End TODO part 1
+    cv.notify_all();  // Notify all threads waiting on the semaphore
 
 }
 
