@@ -57,33 +57,18 @@ void consumerThread()
     while (true)
     {
 
-        std::unique_lock<std::mutex> lock(mutex);  // Prepare to wait
-        cv.wait(lock, []{ return shouldWait(); });  // Wait until there's an item or stopping condition
+        std::unique_lock<std::mutex> lock(mutex);  // Create a std::unique_lock
+        cv.wait(lock, []{ return shouldWait(); });  // Wait on the condition variable, Call shouldWait will return TRUE if this thread should wait on the conditional
 
         if (!sharedQueue.empty()) {
-            int num = sharedQueue.front();
-            sharedQueue.pop();
+            int num = sharedQueue.front(); // Get an item from the queue
+            sharedQueue.pop(); // Delete item from the queue
             std::cout << "Consumed: " << num << std::endl;
             lock.unlock();  // Unlock before signaling semaphore
-            sem_post(&semaphore);  // Signal space available in the queue
-        } else if (!shouldContinue) {
+            sem_post(&semaphore);  // Signal that a slot is available in the queue by calling sem_post
+        } else if (!shouldContinue) { // Terminate loop
             break;  // Exit loop if no items and shouldContinue is false
         }
-
-	// TODO (part 2):
-	//
-        // 1. Create a std::unique_lock
-        // 2. Wait on the condition variable
-        //    a. Call shouldWait will return TRUE if this thread should wait on the conditional
-        // 3. IF the sharedQueue is NOT EMPTY THEN
-        //    a. Get an item from the queue
-        //    b. Delete item from the queue
-        //    c. Write the consumed integer to console, "Consumed: <num>"
-        //    d. Signal that a slot is available in the queue by calling sem_post
-        // 4. IF shouldContinue is false and the sharedQueue is empty THEN
-        //    Terminate loop
-
-	// End TODO part 2
 
     }
 }
